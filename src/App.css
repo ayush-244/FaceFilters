@@ -1,0 +1,337 @@
+/* ════════════════════════════════════════════════════════════════
+   App.css — Face Filter Studio styles
+   Clean, modern, responsive UI with dark theme
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── App layout ──────────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0f;
+  color: #e0e0e0;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(90deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logo-icon {
+  font-size: 1.4rem;
+  -webkit-text-fill-color: initial;
+}
+
+.fps-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Main camera area ────────────────────────────────────────── */
+
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.camera-wrapper {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.6);
+  max-width: 100%;
+}
+
+/* ── Camera component ────────────────────────────────────────── */
+
+.camera-container {
+  position: relative;
+  line-height: 0;
+}
+
+.camera-canvas {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border-radius: 16px;
+}
+
+/* Loading spinner */
+.camera-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 15, 0.92);
+  border-radius: 16px;
+  z-index: 10;
+  gap: 16px;
+}
+
+.camera-loading p {
+  font-size: 0.9rem;
+  color: #a0a0b0;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(167, 139, 250, 0.2);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Permission denied */
+.camera-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 12px;
+}
+
+.camera-error .error-icon {
+  font-size: 3rem;
+}
+
+.camera-error h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.camera-error p {
+  color: #888;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+.camera-error button {
+  padding: 10px 28px;
+  border-radius: 8px;
+  border: none;
+  background: #a78bfa;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.camera-error button:hover {
+  background: #8b5cf6;
+}
+
+/* ── Filter badge (top overlay showing active filter) ────────── */
+
+.filter-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-badge-emoji {
+  font-size: 1rem;
+}
+
+/* ── Capture button ──────────────────────────────────────────── */
+
+.capture-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 5;
+}
+
+.capture-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+}
+
+.capture-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Filter selector bar ─────────────────────────────────────── */
+
+.filter-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(0deg, #0f0f17 0%, #161625 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.filter-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  padding: 4px 0;
+}
+
+.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  min-width: 72px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: #c0c0d0;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  user-select: none;
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.filter-btn.active {
+  border-color: var(--accent, #a78bfa);
+  background: rgba(167, 139, 250, 0.12);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.2);
+}
+
+.filter-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.filter-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 680px) {
+  .camera-canvas {
+    max-width: 100%;
+  }
+
+  .app-header h1 {
+    font-size: 1rem;
+  }
+
+  .filter-btn {
+    min-width: 62px;
+    padding: 8px 10px;
+  }
+
+  .filter-emoji {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .app-header {
+    padding: 8px 12px;
+  }
+
+  .filter-selector {
+    padding: 8px 10px;
+  }
+
+  .filter-btn {
+    min-width: 56px;
+    padding: 6px 8px;
+  }
+
+  .capture-btn {
+    width: 44px;
+    height: 44px;
+    bottom: 10px;
+    right: 10px;
+  }
+}
+
