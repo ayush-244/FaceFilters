@@ -110,3 +110,116 @@ export function getInterEyeDistance(landmarks, canvasWidth) {
   const dy = (rightEye.y - leftEye.y) * canvasWidth;
   return Math.sqrt(dx * dx + dy * dy);
 }
+
+/**
+ * Exponential smoothing with lerp (linear interpolation).
+ * Reduces jitter and provides smooth tracking.
+ * @param {number} current – current value
+ * @param {number} target – target value
+ * @param {number} alpha – smoothing factor (0-1). Lower = smoother but slower
+ * @returns {number} smoothed value
+ */
+export function lerp(current, target, alpha = 0.15) {
+  return current + (target - current) * alpha;
+}
+
+/**
+ * Compute head orientation using face landmarks.
+ * Returns roll (head tilt), pitch (nod), and yaw (turn) in radians.
+ * @param {Array} landmarks – 468 MediaPipe landmarks
+ * @returns {object} { roll, pitch, yaw } in radians
+ */
+export function getHeadOrientation(landmarks) {
+  // Key landmark indices
+  const nose = landmarks[LANDMARKS.NOSE_TIP];
+  const forehead = landmarks[LANDMARKS.FOREHEAD];
+  const chin = landmarks[LANDMARKS.CHIN];
+  const leftEye = landmarks[LANDMARKS.LEFT_EYE];
+  const rightEye = landmarks[LANDMARKS.RIGHT_EYE];
+
+  // **ROLL** (head tilt left-right around Z axis)
+  const roll = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
+
+  // **PITCH** (head nod up-down around X axis)
+  // Use forehead-to-chin vertical alignment
+  const faceHeight = chin.y - forehead.y;
+  const noseCenterY = (forehead.y + chin.y) / 2;
+  const noseDeviation = nose.y - noseCenterY;
+  const pitch = Math.asin(Math.max(-1, Math.min(1, noseDeviation / faceHeight)));
+
+  // **YAW** (head turn left-right around Y axis)
+  // Use nose relative to eye centers
+  const eyeCenterX = (leftEye.x + rightEye.x) / 2;
+  const eyeSpan = rightEye.x - leftEye.x;
+  const noseDevX = nose.x - eyeCenterX;
+  const yaw = Math.asin(Math.max(-1, Math.min(1, noseDevX / eyeSpan)));
+
+  return { roll, pitch, yaw };
+}
+
+/**
+ * Face scale factor based on inter-eye distance.
+ * Larger distance = face closer to camera = scale up.
+ * @param {Array} landmarks
+ * @param {number} canvasWidth
+ * @param {number} baselineDistance – reference inter-eye distance (default 140px)
+ * @returns {number} scale multiplier (1.0 = baseline)
+ */
+export function getFaceScale(landmarks, canvasWidth, baselineDistance = 140) {
+  const dist = getInterEyeDistance(landmarks, canvasWidth);
+  return dist / baselineDistance;
+}
+
+/**
+ * Smoothing state container for landmarks.
+ * Stores previous values and applies lerp to new landmarks.
+ */
+export class LandmarkSmoother {
+  constructor(smoothingFactor = 0.15) {
+    this.smoothingFactor = smoothingFactor;
+    this.prevLandmarks = null;
+    this.prevOrientation = null;
+  }
+
+  /**
+   * Apply smoothing to landmarks array.
+   * @param {Array} landmarks – raw MediaPipe landmarks
+   * @returns {Array} smoothed landmarks
+   */
+  smooth(landmarks) {
+    if (!this.prevLandmarks) {
+      this.prevLandmarks = JSON.parse(JSON.stringify(landmarks));
+      return landmarks;
+    }
+
+    const smoothed = landmarks.map((lm, i) => ({
+      x: lerp(this.prevLandmarks[i].x, lm.x, this.smoothingFactor),
+      y: lerp(this.prevLandmarks[i].y, lm.y, this.smoothingFactor),
+      z: lerp(this.prevLandmarks[i].z, lm.z, this.smoothingFactor),
+    }));
+
+    this.prevLandmarks = JSON.parse(JSON.stringify(smoothed));
+    return smoothed;
+  }
+
+  /**
+   * Apply smoothing to head orientation.
+   * @param {object} orientation – { roll, pitch, yaw }
+   * @returns {object} smoothed orientation
+   */
+  smoothOrientation(orientation) {
+    if (!this.prevOrientation) {
+      this.prevOrientation = { ...orientation };
+      return orientation;
+    }
+
+    const smoothed = {
+      roll: lerp(this.prevOrientation.roll, orientation.roll, this.smoothingFactor),
+      pitch: lerp(this.prevOrientation.pitch, orientation.pitch, this.smoothingFactor),
+      yaw: lerp(this.prevOrientation.yaw, orientation.yaw, this.smoothingFactor),
+    };
+
+    this.prevOrientation = { ...smoothed };
+    return smoothed;
+  }
+}

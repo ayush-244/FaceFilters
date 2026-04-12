@@ -1,25 +1,20 @@
 /**
- * Filters.jsx
- * ------------
- * Wrapper/info component that shows the name and description
- * of the currently active filter as an overlay badge.
- *
- * Props:
- *  - activeFilter {string|null}
+ * Filters.jsx - UPDATED
+ * Overlay badge showing current filter name and emoji
  */
 
-import { FILTERS } from "./FilterSelector";
+import { ANIMATED_FILTERS } from "../utils/animatedFilters";
 
 export default function Filters({ activeFilter }) {
   if (!activeFilter) return null;
 
-  const filter = FILTERS.find((f) => f.id === activeFilter);
+  const filter = ANIMATED_FILTERS.find((f) => f.id === activeFilter);
   if (!filter) return null;
 
   return (
     <div className="filter-badge">
       <span className="filter-badge-emoji">{filter.emoji}</span>
-      <span className="filter-badge-text">{filter.label}</span>
+      <span className="filter-badge-text">{filter.name}</span>
     </div>
   );
 }

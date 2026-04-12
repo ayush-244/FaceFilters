@@ -13,35 +13,38 @@
  *  - onFpsUpdate  {function}    – optional callback receiving current FPS
  */
 
-import { useRef, useEffect, useState, useCallback } from "react";
-import { createFaceMesh, startCamera } from "../utils/faceDetection";
-import {
-  renderDogFilter,
-  renderSunglassesFilter,
-  renderCowboyHatFilter,
-  renderMustacheFilter,
-  renderFireEyesFilter,
-  renderFacePaintFilter,
-  renderColorToneFilter,
-  renderDistortionFilter,
-} from "../utils/filterRenderer";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { createFaceMesh, startCamera, LandmarkSmoother } from "../utils/faceDetection";
+import { renderAnimatedFilter } from "../utils/animatedFilters";
 import { loadAssets } from "../utils/assetLoader";
 
 const CANVAS_W = 640;
 const CANVAS_H = 480;
 
-export default function Camera({ activeFilter, onFpsUpdate }) {
+const Camera = React.forwardRef(({ activeFilter, onFpsUpdate, filterIntensity = 100 }, ref) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const assetsRef = useRef(null);
   const cameraRef = useRef(null);
   const faceMeshRef = useRef(null);
   const latestResults = useRef(null);
+  const smootherRef = useRef(new LandmarkSmoother(0.2)); // Smooth factor: 0.2 = balance between smooth & responsive
   const rafId = useRef(null);
   const fpsFrames = useRef([]);
 
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Forward canvas ref
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(canvasRef.current);
+      } else {
+        ref.current = canvasRef.current;
+      }
+    }
+  }, [ref]);
 
   // ── Preload assets once (async – real PNG images) ─────────────
   useEffect(() => {
@@ -85,25 +88,19 @@ export default function Camera({ activeFilter, onFpsUpdate }) {
       // Apply active filter if face landmarks are available
       const results = latestResults.current;
       if (results && results.multiFaceLandmarks) {
-        for (const landmarks of results.multiFaceLandmarks) {
+        for (let landmarkSet of results.multiFaceLandmarks) {
           // Mirror landmarks on x-axis to match the flipped video
-          const mirrored = landmarks.map((lm) => ({
+          const mirrored = landmarkSet.map((lm) => ({
             x: 1 - lm.x,
             y: lm.y,
             z: lm.z,
           }));
 
-          applyFilter(ctx, mirrored, w, h, activeFilter, assetsRef.current);
-        }
-      }
+          // ✨ APPLY SMOOTHING TO REDUCE JITTER ✨
+          const smoothedLandmarks = smootherRef.current.smooth(mirrored);
 
-      // Apply color tone filter (full-frame, no landmarks needed)
-      if (activeFilter === "color-warm") {
-        renderColorToneFilter(ctx, w, h, "warm");
-      } else if (activeFilter === "color-cool") {
-        renderColorToneFilter(ctx, w, h, "cool");
-      } else if (activeFilter === "color-vintage") {
-        renderColorToneFilter(ctx, w, h, "vintage");
+          applyFilter(ctx, smoothedLandmarks, w, h, activeFilter, assetsRef.current, filterIntensity);
+        }
       }
 
       // FPS tracking
@@ -124,7 +121,7 @@ export default function Camera({ activeFilter, onFpsUpdate }) {
       running = false;
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, [activeFilter, onFpsUpdate]);
+  }, [activeFilter, onFpsUpdate, filterIntensity]);
 
   // ── Initialize FaceMesh + camera ───────────────────────────────
   useEffect(() => {
@@ -201,6 +198,7 @@ export default function Camera({ activeFilter, onFpsUpdate }) {
       <video
         ref={videoRef}
         style={{ display: "none" }}
+        autoPlay
         playsInline
         muted
       />
@@ -214,35 +212,18 @@ export default function Camera({ activeFilter, onFpsUpdate }) {
       />
     </div>
   );
-}
+});
 
 // ── Apply the correct filter renderer ────────────────────────────
 
-function applyFilter(ctx, landmarks, w, h, filterId, assets) {
-  switch (filterId) {
-    case "dog":
-      renderDogFilter(ctx, landmarks, w, h, assets);
-      break;
-    case "sunglasses":
-      renderSunglassesFilter(ctx, landmarks, w, h, assets);
-      break;
-    case "cowboyhat":
-      renderCowboyHatFilter(ctx, landmarks, w, h, assets);
-      break;
-    case "mustache":
-      renderMustacheFilter(ctx, landmarks, w, h, assets);
-      break;
-    case "fireeyes":
-      renderFireEyesFilter(ctx, landmarks, w, h, assets);
-      break;
-    case "facepaint":
-      renderFacePaintFilter(ctx, landmarks, w, h);
-      break;
-    case "distortion":
-      renderDistortionFilter(ctx, landmarks, w, h);
-      break;
-    // color tone filters handled outside landmark loop
-    default:
-      break;
-  }
+function applyFilter(ctx, landmarks, w, h, filterId, assets, intensity = 100) {
+  if (!filterId) return;
+  
+  // Apply filter with opacity adjustment for intensity
+  ctx.save();
+  ctx.globalAlpha = (intensity / 100) * ctx.globalAlpha;
+  renderAnimatedFilter(ctx, landmarks, w, h, filterId);
+  ctx.restore();
 }
+
+export default Camera;
